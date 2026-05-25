@@ -1,0 +1,5 @@
+.git
+.gradle-home
+postgres-data
+tmp
+*.log
