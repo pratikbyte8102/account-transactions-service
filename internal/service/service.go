@@ -63,8 +63,11 @@ func (s *Service) CreateTransaction(ctx context.Context, accountID int64, operat
 	if !domain.ValidOperationType(operationTypeID) {
 		return domain.Transaction{}, ValidationError{Message: "operation_type_id is invalid"}
 	}
-	if amount == 0 {
-		return domain.Transaction{}, ValidationError{Message: "amount must be non-zero"}
+	if operationTypeID == domain.OperationTypeCreditVoucher && amount <= 0 {
+		return domain.Transaction{}, ValidationError{Message: "amount must be positive for credit voucher"}
+	}
+	if operationTypeID != domain.OperationTypeCreditVoucher && amount >= 0 {
+		return domain.Transaction{}, ValidationError{Message: "amount must be negative for purchases and withdrawals"}
 	}
 
 	exists, err := s.accounts.Exists(ctx, accountID)

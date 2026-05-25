@@ -55,7 +55,7 @@ postgres://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=disable
 Local development example:
 
 ```sh
-export DATABASE_URL='postgres://gajanand@localhost:5432/transactions?sslmode=disable'
+export DATABASE_URL='postgres://pratik@localhost:5432/transactions?sslmode=disable'
 go run ./cmd/api
 ```
 
@@ -167,7 +167,7 @@ Retrieve an account:
 curl -i http://127.0.0.1:8080/accounts/1
 ```
 
-Create a credit voucher transaction. This is stored as a positive amount:
+Create a credit voucher transaction. Credit vouchers must be sent as positive amounts:
 
 ```sh
 curl -i -X POST http://127.0.0.1:8080/transactions \
@@ -175,18 +175,48 @@ curl -i -X POST http://127.0.0.1:8080/transactions \
   -d '{"account_id":1,"operation_type_id":4,"amount":123.45}'
 ```
 
-Create a normal purchase transaction. This is stored as a negative amount:
+Create a normal purchase transaction. Operation types `1`, `2`, and `3` must be sent as negative amounts:
 
 ```sh
 curl -i -X POST http://127.0.0.1:8080/transactions \
   -H 'Content-Type: application/json' \
-  -d '{"account_id":1,"operation_type_id":1,"amount":50.00}'
+  -d '{"account_id":1,"operation_type_id":1,"amount":-50.00}'
+```
+
+Create a purchase with installments transaction:
+
+```sh
+curl -i -X POST http://127.0.0.1:8080/transactions \
+  -H 'Content-Type: application/json' \
+  -d '{"account_id":1,"operation_type_id":2,"amount":-123.45}'
+```
+
+Create a withdrawal transaction:
+
+```sh
+curl -i -X POST http://127.0.0.1:8080/transactions \
+  -H 'Content-Type: application/json' \
+  -d '{"account_id":1,"operation_type_id":3,"amount":-75.00}'
+```
+
+Invalid amount sign example:
+
+```sh
+curl -i -X POST http://127.0.0.1:8080/transactions \
+  -H 'Content-Type: application/json' \
+  -d '{"account_id":1,"operation_type_id":1,"amount":123.45}'
+```
+
+Response:
+
+```json
+{"error":"amount must be negative for purchases and withdrawals"}
 ```
 
 ## Business Rules
 
-- Operation type `1`: Normal Purchase, stored with a negative amount.
-- Operation type `2`: Purchase with installments, stored with a negative amount.
-- Operation type `3`: Withdrawal, stored with a negative amount.
-- Operation type `4`: Credit Voucher, stored with a positive amount.
+- Operation type `1`: Normal Purchase, request amount must be negative.
+- Operation type `2`: Purchase with installments, request amount must be negative.
+- Operation type `3`: Withdrawal, request amount must be negative.
+- Operation type `4`: Credit Voucher, request amount must be positive.
 - Each transaction receives an `event_date` timestamp when it is created.

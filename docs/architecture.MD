@@ -124,18 +124,25 @@ GET /accounts/{accountId}
 ```text
 POST /transactions
     -> HTTP handler decodes account_id, operation_type_id, amount
-    -> service validates account, operation type, and non-zero amount
-    -> service normalizes amount sign
+    -> service validates account, operation type, and amount sign
+    -> service stores the amount with the validated sign
     -> transaction repository inserts into transactions
     -> HTTP handler returns the stored transaction
 ```
 
 Amount rules:
 
-- Operation type `1`, Normal Purchase: stored negative.
-- Operation type `2`, Purchase with installments: stored negative.
-- Operation type `3`, Withdrawal: stored negative.
-- Operation type `4`, Credit Voucher: stored positive.
+- Operation type `1`, Normal Purchase: request amount must be negative.
+- Operation type `2`, Purchase with installments: request amount must be negative.
+- Operation type `3`, Withdrawal: request amount must be negative.
+- Operation type `4`, Credit Voucher: request amount must be positive.
+
+Invalid sign examples:
+
+- `operation_type_id: 1` with `amount: 123.45` returns `400`.
+- `operation_type_id: 2` with `amount: 123.45` returns `400`.
+- `operation_type_id: 3` with `amount: 123.45` returns `400`.
+- `operation_type_id: 4` with `amount: -123.45` returns `400`.
 
 ## Database
 

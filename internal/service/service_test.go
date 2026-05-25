@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -53,10 +54,10 @@ func TestCreateTransactionNormalizesAmountByOperationType(t *testing.T) {
 		amount          float64
 		wantAmount      float64
 	}{
-		{name: "normal purchase", operationTypeID: domain.OperationTypeNormalPurchase, amount: 123.45, wantAmount: -123.45},
-		{name: "installment purchase", operationTypeID: domain.OperationTypeInstallmentPurchase, amount: 123.45, wantAmount: -123.45},
-		{name: "withdrawal", operationTypeID: domain.OperationTypeWithdrawal, amount: 123.45, wantAmount: -123.45},
-		{name: "credit voucher", operationTypeID: domain.OperationTypeCreditVoucher, amount: -123.45, wantAmount: 123.45},
+		{name: "normal purchase", operationTypeID: domain.OperationTypeNormalPurchase, amount: -123.45, wantAmount: -123.45},
+		{name: "installment purchase", operationTypeID: domain.OperationTypeInstallmentPurchase, amount: -123.45, wantAmount: -123.45},
+		{name: "withdrawal", operationTypeID: domain.OperationTypeWithdrawal, amount: -123.45, wantAmount: -123.45},
+		{name: "credit voucher", operationTypeID: domain.OperationTypeCreditVoucher, amount: 123.45, wantAmount: 123.45},
 	}
 
 	for _, tt := range tests {
@@ -107,6 +108,34 @@ func TestCreateTransactionRejectsZeroAmount(t *testing.T) {
 	_, err := svc.CreateTransaction(context.Background(), 1, domain.OperationTypeCreditVoucher, 0)
 	if !errors.Is(err, ErrValidation) {
 		t.Fatalf("CreateTransaction() error = %v, want validation", err)
+	}
+}
+
+func TestCreateTransactionRejectsNegativeCreditVoucherAmount(t *testing.T) {
+	svc := New(&fakeAccountRepository{existingIDs: map[int64]bool{1: true}}, &fakeTransactionRepository{})
+
+	_, err := svc.CreateTransaction(context.Background(), 1, domain.OperationTypeCreditVoucher, -123.45)
+	if !errors.Is(err, ErrValidation) {
+		t.Fatalf("CreateTransaction() error = %v, want validation", err)
+	}
+}
+
+func TestCreateTransactionRejectsPositivePurchaseOrWithdrawalAmount(t *testing.T) {
+	tests := []domain.OperationTypeID{
+		domain.OperationTypeNormalPurchase,
+		domain.OperationTypeInstallmentPurchase,
+		domain.OperationTypeWithdrawal,
+	}
+
+	for _, operationTypeID := range tests {
+		t.Run(fmt.Sprintf("operation type %d", operationTypeID), func(t *testing.T) {
+			svc := New(&fakeAccountRepository{existingIDs: map[int64]bool{1: true}}, &fakeTransactionRepository{})
+
+			_, err := svc.CreateTransaction(context.Background(), 1, operationTypeID, 123.45)
+			if !errors.Is(err, ErrValidation) {
+				t.Fatalf("CreateTransaction() error = %v, want validation", err)
+			}
+		})
 	}
 }
 
