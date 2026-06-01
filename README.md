@@ -22,6 +22,7 @@ The only external Go dependency is `github.com/lib/pq`, which is the PostgreSQL 
 ```
 
 The API will be available at `http://localhost:8080`.
+Interactive Swagger UI documentation will be available at `http://localhost:8080/swagger/`.
 
 Docker Compose starts two services:
 
@@ -146,6 +147,12 @@ Required tools:
 Go and PostgreSQL do not need to be installed on the host when using Docker.
 
 ## Endpoints
+
+Swagger UI:
+
+```text
+http://127.0.0.1:8080/swagger/
+```
 
 Health check:
 

@@ -41,6 +41,9 @@ func (h *Handler) Routes() http.Handler {
 	mux.HandleFunc("POST /accounts", h.createAccount)
 	mux.HandleFunc("GET /accounts/{accountId}", h.getAccount)
 	mux.HandleFunc("POST /transactions", h.createTransaction)
+	mux.HandleFunc("GET /swagger", h.redirectToSwaggerUI)
+	mux.HandleFunc("GET /swagger/{$}", h.swaggerUI)
+	mux.HandleFunc("GET /swagger/openapi.yaml", h.swaggerSpec)
 	return mux
 }
 

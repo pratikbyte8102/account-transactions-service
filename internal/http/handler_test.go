@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -151,6 +152,63 @@ func TestHandlerValidationAndNotFoundErrors(t *testing.T) {
 				t.Fatalf("status = %d, want %d; body=%s", rec.Code, tt.wantStatus, rec.Body.String())
 			}
 		})
+	}
+}
+
+func TestSwaggerDocumentationRoutes(t *testing.T) {
+	server := NewHandler(&fakeApp{}, &fakeApp{}, nil).Routes()
+
+	tests := []struct {
+		name        string
+		path        string
+		wantStatus  int
+		wantType    string
+		wantContent string
+	}{
+		{
+			name:        "swagger ui",
+			path:        "/swagger/",
+			wantStatus:  http.StatusOK,
+			wantType:    "text/html; charset=utf-8",
+			wantContent: `url: "/swagger/openapi.yaml"`,
+		},
+		{
+			name:        "openapi specification",
+			path:        "/swagger/openapi.yaml",
+			wantStatus:  http.StatusOK,
+			wantType:    "application/yaml",
+			wantContent: "openapi: 3.0.3",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			rec := httptest.NewRecorder()
+
+			server.ServeHTTP(rec, req)
+
+			if rec.Code != tt.wantStatus {
+				t.Fatalf("status = %d, want %d; body=%s", rec.Code, tt.wantStatus, rec.Body.String())
+			}
+			if contentType := rec.Header().Get("Content-Type"); contentType != tt.wantType {
+				t.Fatalf("Content-Type = %q, want %q", contentType, tt.wantType)
+			}
+			if !strings.Contains(rec.Body.String(), tt.wantContent) {
+				t.Fatalf("body does not contain %q", tt.wantContent)
+			}
+		})
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/swagger", nil)
+	rec := httptest.NewRecorder()
+	server.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusPermanentRedirect {
+		t.Fatalf("redirect status = %d, want %d", rec.Code, http.StatusPermanentRedirect)
+	}
+	if location := rec.Header().Get("Location"); location != "/swagger/" {
+		t.Fatalf("Location = %q, want /swagger/", location)
 	}
 }
 
