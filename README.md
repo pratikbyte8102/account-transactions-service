@@ -15,6 +15,44 @@ This project uses Go's built-in `net/http` package for all API routing, request 
 
 The only external Go dependency is `github.com/lib/pq`, which is the PostgreSQL driver used by `database/sql`.
 
+## Swagger UI
+
+This project uses a specification-first Swagger UI setup with Go's standard library. It does not use Swaggo annotations, generated Go files, or the `swag init` command.
+
+The OpenAPI 3.0 specification is maintained in:
+
+```text
+internal/http/swagger/openapi.yaml
+```
+
+The Swagger UI HTML page is maintained in:
+
+```text
+internal/http/swagger/index.html
+```
+
+Both files are embedded into the API binary with Go's `embed` package and served by the existing `net/http` router. No additional Go dependency is required.
+
+After starting the application, open:
+
+```text
+http://localhost:8080/swagger/
+```
+
+Available documentation routes:
+
+- `GET /swagger`: redirects to the Swagger UI page.
+- `GET /swagger/`: serves the interactive Swagger UI page.
+- `GET /swagger/openapi.yaml`: serves the OpenAPI specification.
+
+The HTML page loads Swagger UI browser assets from `https://unpkg.com/swagger-ui-dist@5`, so the browser requires internet access to display the interactive interface. The OpenAPI specification itself is served locally by the API.
+
+When adding or changing an endpoint, update `internal/http/swagger/openapi.yaml` and rebuild the application. For Docker:
+
+```sh
+docker compose up --build -d
+```
+
 ## Run With Docker
 
 ```sh
